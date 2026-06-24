@@ -1,12 +1,14 @@
 import { Request, Response } from "express";
 
 export const notFoundMiddleware = (
-  req: Request,
+  _req: Request,
   res: Response
-): void => {
-
+) => {
   res.status(404).json({
     success: false,
-    message: "Route not found"
+    error: {
+      code: "NOT_FOUND",
+      message: "Route not found"
+    }
   });
 };

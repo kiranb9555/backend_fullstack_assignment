@@ -1,21 +1,20 @@
-import { Request, Response, NextFunction } from "express";
-
+import { NextFunction, Request, Response } from "express";
 import { logger } from "../logger/logger.js";
 
 export const requestLogger = (
   req: Request,
   res: Response,
   next: NextFunction
-): void => {
-
-  const start = Date.now();
+) => {
+  const startedAt = Date.now();
 
   res.on("finish", () => {
     logger.info({
+      event: "http_request",
       method: req.method,
-      url: req.originalUrl,
+      path: req.originalUrl,
       statusCode: res.statusCode,
-      durationMs: Date.now() - start
+      durationMs: Date.now() - startedAt
     });
   });
 

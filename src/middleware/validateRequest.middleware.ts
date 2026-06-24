@@ -1,26 +1,34 @@
-import { Request, Response, NextFunction } from "express";
-import { ZodSchema } from "zod";
+import { NextFunction, Request, Response } from "express";
+import { AnyZodObject, ZodEffects } from "zod";
+
+type SupportedSchema =
+  | AnyZodObject
+  | ZodEffects<AnyZodObject>;
 
 export const validateRequest =
-  <T>(schema: ZodSchema<T>) =>
+  (schema: SupportedSchema) =>
   (
     req: Request,
-    res: Response,
+    _res: Response,
     next: NextFunction
-  ): void => {
+  ) => {
+    const payload =
+      req.method === "GET"
+        ? req.query
+        : req.body;
 
-    const result = schema.safeParse(req.body);
+    const parsed =
+      schema.safeParse(payload);
 
-    if (!result.success) {
-      res.status(400).json({
-        success: false,
-        errors: result.error.flatten()
-      });
-
-      return;
+    if (!parsed.success) {
+      return next(parsed.error);
     }
 
-    req.body = result.data;
+    if (req.method === "GET") {
+      req.query = parsed.data;
+    } else {
+      req.body = parsed.data;
+    }
 
-    next();
+    return next();
   };
