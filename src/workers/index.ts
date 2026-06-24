@@ -1,1 +1,3 @@
-import "./voicemail.worker.js";
+import { startVoicemailWorker } from "./voicemail.worker.js";
+
+startVoicemailWorker();

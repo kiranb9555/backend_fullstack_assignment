@@ -4,7 +4,7 @@ import { ExtractedData } from "../modules/intelligence/intelligence.schemas.js";
 
 export class ContactIntelligenceService {
 
-  async upsertContactFromIntelligence(
+  async enrichContactFromIntelligence(
     tx: Prisma.TransactionClient,
     tenantId: string,
     callerMobile: string,
@@ -21,6 +21,10 @@ export class ContactIntelligenceService {
       });
 
     if (!contact) {
+      /**
+       * Fallback safety: ideally simulate.service.ts already created it.
+       * But if for some reason it doesn't exist, create it here.
+       */
       contact =
         await tx.contact.create({
           data: {
@@ -55,9 +59,6 @@ export class ContactIntelligenceService {
             contact.name ??
             extracted.name ??
             undefined,
-          callCount: {
-            increment: 1
-          },
           tags: Array.from(updatedTags)
         }
       });

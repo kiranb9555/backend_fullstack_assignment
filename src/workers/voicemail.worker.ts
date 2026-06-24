@@ -11,7 +11,7 @@ import { TranscriptService } from "../services/transcript.service.js";
 import { AiExtractionService } from "../services/ai-extraction.service.js";
 import { ContactIntelligenceService } from "../services/contact-intelligence.service.js";
 
-interface VoicemailJobPayload {
+export interface VoicemailJobPayload {
   tenantId: string;
   callRecordId: string;
   intelligenceJobId: string;
@@ -26,174 +26,201 @@ const aiExtractionService =
 const contactIntelligenceService =
   new ContactIntelligenceService();
 
-export const voicemailWorker =
-  new Worker<VoicemailJobPayload>(
-    "voicemail-processing",
-    async (
-      job: Job<VoicemailJobPayload>
-    ) => {
+let workerInstance:
+  Worker<VoicemailJobPayload> | null = null;
 
-      const startedAt = Date.now();
+export const startVoicemailWorker = () => {
+  if (workerInstance) {
+    return workerInstance;
+  }
 
-      const {
-        tenantId,
-        callRecordId,
-        intelligenceJobId
-      } = job.data;
+  workerInstance =
+    new Worker<VoicemailJobPayload>(
+      "voicemail-processing",
+      async (
+        job: Job<VoicemailJobPayload>
+      ) => {
+        const startedAt = Date.now();
 
-      const callRecord =
-        await prisma.callRecord.findFirst({
-          where: {
-            id: callRecordId,
-            tenantId
-          }
-        });
-
-      if (!callRecord) {
-        throw new Error(
-          "CallRecord not found for voicemail job"
-        );
-      }
-
-      const transcript =
-        transcriptService.generateTranscript();
-
-      /**
-       * Save transcript immediately after generation
-       * so we never lose raw data even if AI fails.
-       */
-      await prisma.intelligenceJob.update({
-        where: {
-          id: intelligenceJobId
-        },
-        data: {
-          status: JobStatus.PROCESSING,
-          transcript
-        }
-      });
-
-      try {
-
-        const extracted =
-          await aiExtractionService.extractFromTranscript(
-            transcript
-          );
-
-        const summary =
-          extracted.intent
-            ? `${extracted.intent} | ${extracted.sentiment}`
-            : `Voicemail processed | ${extracted.sentiment}`;
-
-        const result =
-          await prisma.$transaction(async tx => {
-
-            const contact =
-              await contactIntelligenceService
-                .upsertContactFromIntelligence(
-                  tx,
-                  tenantId,
-                  callRecord.callerMobile,
-                  extracted
-                );
-
-            const updatedCallRecord =
-              await tx.callRecord.update({
-                where: {
-                  id: callRecordId
-                },
-                data: {
-                  contactId: contact.id,
-                  aiSummary: summary
-                }
-              });
-
-            await tx.intelligenceJob.update({
-              where: {
-                id: intelligenceJobId
-              },
-              data: {
-                status: JobStatus.DONE,
-                extractedData: extracted,
-                processingMs:
-                  Date.now() - startedAt,
-                errorMessage: null
-              }
-            });
-
-            return updatedCallRecord;
-          });
-
-        getIO()
-          .to(`tenant:${tenantId}`)
-          .emit(
-            "intelligence_ready",
-            result
-          );
-
-        logger.info({
-          event: "voicemail_processed",
+        const {
           tenantId,
           callRecordId,
           intelligenceJobId
-        });
+        } = job.data;
 
-        return;
-      } catch (error) {
+        const callRecord =
+          await prisma.callRecord.findFirst({
+            where: {
+              id: callRecordId,
+              tenantId
+            }
+          });
 
-        const err =
-          error instanceof Error
-            ? error
-            : new Error("Unknown worker error");
+        if (!callRecord) {
+          throw new Error(
+            "CallRecord not found for voicemail job"
+          );
+        }
+
+        const transcript =
+          transcriptService.generateTranscript();
 
         await prisma.intelligenceJob.update({
           where: {
             id: intelligenceJobId
           },
           data: {
-            status: JobStatus.FAILED,
-            processingMs:
-              Date.now() - startedAt,
-            errorMessage: err.message,
-            retryCount: {
-              increment: 1
-            }
+            status: JobStatus.PROCESSING,
+            transcript
           }
         });
 
-        logger.error({
-          event: "voicemail_processing_failed",
-          tenantId,
-          callRecordId,
-          intelligenceJobId,
-          message: err.message
-        });
+        try {
+          const extracted =
+            await aiExtractionService.extractFromTranscript(
+              transcript
+            );
 
-        throw err;
+          const summary =
+            extracted.intent
+              ? `${extracted.intent} | ${extracted.sentiment}`
+              : `Voicemail processed | ${extracted.sentiment}`;
+
+          const updatedCallRecord =
+            await prisma.$transaction(
+              async tx => {
+                const contact =
+                  await contactIntelligenceService
+                    .enrichContactFromIntelligence(
+                      tx,
+                      tenantId,
+                      callRecord.callerMobile,
+                      extracted
+                    );
+
+                const result =
+                  await tx.callRecord.update({
+                    where: {
+                      id: callRecordId
+                    },
+                    data: {
+                      contactId: contact.id,
+                      aiSummary: summary
+                    }
+                  });
+
+                await tx.intelligenceJob.update({
+                  where: {
+                    id: intelligenceJobId
+                  },
+                  data: {
+                    status: JobStatus.DONE,
+                    extractedData: extracted,
+                    processingMs:
+                      Date.now() - startedAt,
+                    errorMessage: null
+                  }
+                });
+
+                return result;
+              }
+            );
+
+          getIO()
+            .to(`tenant:${tenantId}`)
+            .emit(
+              "intelligence_ready",
+              {
+                event: "intelligence_ready",
+                data: updatedCallRecord
+              }
+            );
+
+          logger.info({
+            event: "voicemail_processed",
+            tenantId,
+            callRecordId,
+            intelligenceJobId
+          });
+
+          return;
+        } catch (error) {
+          const err =
+            error instanceof Error
+              ? error
+              : new Error(
+                  "Unknown voicemail processing error"
+                );
+
+          await prisma.intelligenceJob.update({
+            where: {
+              id: intelligenceJobId
+            },
+            data: {
+              status: JobStatus.FAILED,
+              processingMs:
+                Date.now() - startedAt,
+              errorMessage: err.message,
+              retryCount: {
+                increment: 1
+              }
+            }
+          });
+
+          logger.error({
+            event: "voicemail_processing_failed",
+            tenantId,
+            callRecordId,
+            intelligenceJobId,
+            message: err.message
+          });
+
+          throw err;
+        }
+      },
+      {
+        connection: queueConnection,
+        concurrency: 5
       }
-    },
-    {
-      connection: queueConnection,
-      concurrency: 5
+    );
+
+  workerInstance.on(
+    "completed",
+    job => {
+      logger.info({
+        event: "voicemail_worker_job_completed",
+        jobId: job.id
+      });
     }
   );
 
-voicemailWorker.on(
-  "failed",
-  (job, error) => {
-    logger.error({
-      event: "voicemail_worker_job_failed",
-      jobId: job?.id,
-      message: error.message
-    });
-  }
-);
+  workerInstance.on(
+    "failed",
+    (job, error) => {
+      logger.error({
+        event: "voicemail_worker_job_failed",
+        jobId: job?.id,
+        message: error.message
+      });
+    }
+  );
 
-voicemailWorker.on(
-  "completed",
-  job => {
-    logger.info({
-      event: "voicemail_worker_job_completed",
-      jobId: job.id
-    });
+  return workerInstance;
+};
+
+export const getVoicemailWorker = () => {
+  if (!workerInstance) {
+    throw new Error(
+      "Voicemail worker not started"
+    );
   }
-);
+
+  return workerInstance;
+};
+
+export const stopVoicemailWorker = async () => {
+  if (workerInstance) {
+    await workerInstance.close();
+    workerInstance = null;
+  }
+};
