@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PlanTier {
+  BASIC
+  PRO
+}
+
+enum CallDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum CallStatus {
+  RINGING
+  ANSWERED
+  MISSED
+  FAILED
+  COMPLETED
+}
+
+enum IntelligenceJobStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+enum WalletTxType {
+  CREDIT
+  DEBIT
+}
+
+model Tenant {
+  id            String   @id @default(uuid())
+  businessName  String
+  mobile        String   @unique
+  planTier      PlanTier @default(BASIC)
+  createdAt     DateTime @default(now())
+
+  virtualNumbers VirtualNumber[]
+  contacts       Contact[]
+  callRecords    CallRecord[]
+  walletTxs      WalletTx[]
+
+  @@map("tenants")
+}
+
+model VirtualNumber {
+  id             String   @id @default(uuid())
+
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  e164Number     String   @unique
+  label          String?
+  isActive       Boolean  @default(true)
+  provisionedAt  DateTime @default(now())
+
+  callRecords    CallRecord[]
+
+  @@index([tenantId])
+  @@map("virtual_numbers")
+}
+
+model Contact {
+  id            String   @id @default(uuid())
+
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  phoneNumber   String
+  name          String?
+  tags          String[]
+  firstSeenAt   DateTime @default(now())
+  callCount     Int      @default(0)
+
+  callRecords   CallRecord[]
+
+  @@index([tenantId])
+  @@index([tenantId, phoneNumber])
+  @@map("contacts")
+}
+
+model CallRecord {
+  id               String   @id @default(uuid())
+
+  tenantId         String
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  virtualNumberId  String
+  virtualNumber    VirtualNumber @relation(fields: [virtualNumberId], references: [id])
+
+  contactId        String?
+  contact          Contact? @relation(fields: [contactId], references: [id])
+
+  direction        CallDirection
+  status           CallStatus
+
+  durationSec      Int      @default(0)
+
+  recordingKey     String?
+  aiSummary        String?
+
+  createdAt        DateTime @default(now())
+
+  intelligenceJob  IntelligenceJob?
+
+  @@index([tenantId])
+  @@index([virtualNumberId])
+  @@index([contactId])
+  @@index([createdAt])
+  @@map("call_records")
+}
+
+model IntelligenceJob {
+  id              String   @id @default(uuid())
+
+  callRecordId    String   @unique
+  callRecord      CallRecord @relation(fields: [callRecordId], references: [id], onDelete: Cascade)
+
+  status          IntelligenceJobStatus @default(PENDING)
+
+  transcript      String?
+  extractedData   Json?
+
+  processingMs    Int?
+  createdAt       DateTime @default(now())
+
+  @@map("intelligence_jobs")
+}
+
+model WalletTx {
+  id             String   @id @default(uuid())
+
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  type           WalletTxType
+
+  amountPaise    Int
+
+  description    String
+
+  createdAt      DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([createdAt])
+  @@map("wallet_transactions")
+}
+
+model OtpSession {
+  id           String   @id @default(uuid())
+
+  tenantId     String?
+
+  mobile       String
+
+  otpHash      String
+
+  expiresAt    DateTime
+
+  verified     Boolean  @default(false)
+
+  createdAt    DateTime @default(now())
+
+  @@index([mobile])
+  @@map("otp_sessions")
+}

@@ -1,0 +1,28 @@
+backend/
+├── docker-compose.yml
+├── Dockerfile
+├── package.json
+├── tsconfig.json
+├── .env.example
+├── prisma/
+│   └── schema.prisma
+├── src/
+│   ├── app.ts
+│   ├── server.ts
+│   ├── config/
+│   │   └── env.ts
+│   ├── db/
+│   │   └── prisma.ts
+│   ├── redis/
+│   │   └── redis.ts
+│   ├── logger/
+│   │   └── logger.ts
+│   ├── middleware/
+│   │   ├── error.middleware.ts
+│   │   └── notFound.middleware.ts
+│   ├── queues/
+│   │   └── connection.ts
+│   ├── socket/
+│   │   └── socket.ts
+│   └── types/
+│       └── express.d.ts

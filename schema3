@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PlanTier {
+  BASIC
+  PRO
+}
+
+enum CallDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum CallStatus {
+  ANSWERED
+  MISSED
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+enum WalletTxType {
+  CREDIT
+  DEBIT
+}
+
+model Tenant {
+  id           String   @id @default(uuid())
+  businessName String
+  mobile       String   @unique
+  planTier     PlanTier @default(BASIC)
+  createdAt    DateTime @default(now())
+
+  virtualNumbers   VirtualNumber[]
+  contacts         Contact[]
+  callRecords      CallRecord[]
+  walletTxs        WalletTx[]
+  refreshTokens    RefreshToken[]
+  intelligenceJobs IntelligenceJob[]
+  numberPools      NumberPool[]
+
+  @@index([mobile])
+}
+
+model NumberPool {
+  id String @id @default(uuid())
+
+  tenantId String?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  e164Number String @unique
+
+  isAssigned Boolean @default(false)
+
+  assignedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  virtualNumber VirtualNumber?
+
+  @@index([isAssigned])
+  @@index([tenantId])
+}
+
+model VirtualNumber {
+  id String @id @default(uuid())
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  numberPoolId String     @unique
+  numberPool   NumberPool @relation(fields: [numberPoolId], references: [id])
+
+  e164Number    String   @unique
+  label         String
+  isActive      Boolean  @default(true)
+  provisionedAt DateTime @default(now())
+
+  callRecords CallRecord[]
+
+  @@index([tenantId])
+}
+
+model Contact {
+  id String @id @default(uuid())
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  phoneNumber String
+  name        String?
+
+  tags String[]
+
+  firstSeenAt DateTime @default(now())
+  callCount   Int      @default(0)
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  callRecords CallRecord[]
+
+  @@unique([tenantId, phoneNumber])
+  @@index([tenantId])
+  @@index([phoneNumber])
+  @@index([tenantId, callCount])
+}
+
+model CallRecord {
+  id String @id @default(uuid())
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  virtualNumberId String
+  virtualNumber   VirtualNumber @relation(fields: [virtualNumberId], references: [id])
+
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id])
+
+  direction CallDirection
+  status    CallStatus
+
+  durationSec Int
+
+  recordingKey String?
+
+  aiSummary String?
+
+  callerMobile String
+
+  createdAt DateTime @default(now())
+
+  intelligenceJob IntelligenceJob?
+
+  @@index([tenantId])
+  @@index([contactId])
+  @@index([virtualNumberId])
+  @@index([createdAt])
+  @@index([tenantId, createdAt])
+}
+
+model IntelligenceJob {
+  id String @id @default(uuid())
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  callRecordId String     @unique
+  callRecord   CallRecord @relation(fields: [callRecordId], references: [id])
+
+  status JobStatus @default(PENDING)
+
+  transcript String?
+
+  extractedData Json?
+
+  processingMs Int?
+
+  retryCount Int @default(0)
+
+  errorMessage String?
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([status])
+}
+
+model WalletTx {
+  id String @id @default(uuid())
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  type WalletTxType
+
+  amountPaise Int
+
+  description String
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([createdAt])
+}
+
+model RefreshToken {
+  id String @id @default(uuid())
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  token String @unique
+
+  expiresAt DateTime
+
+  revoked Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([token])
+}
