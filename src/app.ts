@@ -20,39 +20,20 @@ app.use(express.json());
 
 app.use(requestLogger);
 
-app.get(
-  "/health",
-  (_, res) => {
-    res.json({
+app.get("/health", (_req, res) => {
+  res.status(200).json({
+    success: true,
+    data: {
       status: "ok"
-    });
-  }
-);
+    }
+  });
+});
 
-app.use(
-  "/api/auth",
-  authRoutes
-);
-
-app.use(
-  "/api/numbers",
-  numbersRoutes
-);
-
-app.use(
-  "/api/simulate",
-  simulateRoutes
-);
-
-app.use(
-  "/api/contacts",
-  contactsRoutes
-);
-
-app.use(
-  "/api/analytics",
-  analyticsRoutes
-);
+app.use("/api/auth", authRoutes);
+app.use("/api/numbers", numbersRoutes);
+app.use("/api/simulate", simulateRoutes);
+app.use("/api/contacts", contactsRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);

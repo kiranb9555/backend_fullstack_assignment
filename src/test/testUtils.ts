@@ -5,17 +5,14 @@ import { voicemailQueue } from "../queues/voicemail.queue.js";
 import { contactCleanupQueue } from "../queues/contact-cleanup.queue.js";
 
 export const createTestTenant = async () => {
-  const tenant =
-    await prisma.tenant.create({
-      data: {
-        businessName: "Test Business",
-        mobile: `9${Math.floor(
-          100000000 + Math.random() * 899999999
-        )}`
-      }
-    });
-
-  return tenant;
+  return prisma.tenant.create({
+    data: {
+      businessName: "Test Business",
+      mobile: `9${Math.floor(
+        100000000 + Math.random() * 899999999
+      )}`
+    }
+  });
 };
 
 export const createAuthHeader = (

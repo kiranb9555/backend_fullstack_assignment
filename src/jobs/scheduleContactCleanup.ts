@@ -5,6 +5,7 @@ export const scheduleContactCleanup = async () => {
     "cleanup-deleted-contacts",
     {},
     {
+      jobId: "daily-contact-cleanup",
       repeat: {
         every: 24 * 60 * 60 * 1000
       },

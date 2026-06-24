@@ -1,57 +1,53 @@
-import {
-  Request,
-  Response,
-  NextFunction
-} from "express";
+import { NextFunction, Request, Response } from "express";
 
 import { prisma } from "../db/prisma.js";
-
-import {
-  verifyAccessToken
-} from "../utils/jwt.js";
-
 import { UnauthorizedError } from "../common/errors/UnauthorizedError.js";
+import { verifyAccessToken } from "../utils/jwt.js";
 
 export const validateToken = async (
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
-): Promise<void> => {
-
+) => {
   const authHeader =
     req.headers.authorization;
 
-  if (!authHeader) {
-    throw new UnauthorizedError(
-      "Authorization header missing"
+  if (!authHeader?.startsWith("Bearer ")) {
+    return next(
+      new UnauthorizedError("Missing bearer token")
     );
   }
 
   const token =
-    authHeader.replace(
-      "Bearer ",
-      ""
-    );
+    authHeader.replace("Bearer ", "").trim();
 
-  const payload =
-    verifyAccessToken(
-      token
-    );
+  try {
+    const payload =
+      verifyAccessToken(token);
 
-  const tenant =
-    await prisma.tenant.findUnique({
-      where: {
-        id: payload.tenantId
-      }
-    });
+    const tenant =
+      await prisma.tenant.findUnique({
+        where: {
+          id: payload.tenantId
+        }
+      });
 
-  if (!tenant) {
-    throw new UnauthorizedError(
-      "Tenant not found"
+    if (!tenant) {
+      return next(
+        new UnauthorizedError("Tenant not found")
+      );
+    }
+
+    req.auth = {
+      tenantId: payload.tenantId
+    };
+
+    req.tenant = tenant;
+
+    return next();
+  } catch {
+    return next(
+      new UnauthorizedError("Invalid token")
     );
   }
-
-  req.tenant = tenant;
-
-  next();
 };

@@ -1,43 +1,40 @@
-import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
+import { Server } from "socket.io";
 
-let io: Server;
+let io: Server | null = null;
+
+const createNoopIo = () => {
+  return {
+    to: () => ({
+      emit: () => undefined
+    })
+  };
+};
 
 export const initializeSocket = (
   server: HttpServer
-): Server => {
-
+) => {
   io = new Server(server, {
     cors: {
       origin: "*"
     }
   });
 
-  io.on(
-    "connection",
-    socket => {
-
-      socket.on(
-        "join_tenant",
-        (tenantId: string) => {
-
-          socket.join(
-            `tenant:${tenantId}`
-          );
-        }
-      );
-    }
-  );
+  io.on("connection", socket => {
+    socket.on(
+      "join_tenant_room",
+      (tenantId: string) => {
+        socket.join(`tenant:${tenantId}`);
+      }
+    );
+  });
 
   return io;
 };
 
-export const getIO = (): Server => {
-
+export const getIO = () => {
   if (!io) {
-    throw new Error(
-      "Socket not initialized"
-    );
+    return createNoopIo();
   }
 
   return io;
