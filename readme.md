@@ -26,3 +26,8 @@ backend/
 │   │   └── socket.ts
 │   └── types/
 │       └── express.d.ts
+
+/api/contacts?page=1&limit=20
+/api/contacts?tag=pricing inquiry
+/api/contacts?minCallCount=2
+/api/contacts?firstSeenFrom=2026-06-01T00:00:00.000Z&firstSeenTo=2026-06-30T23:59:59.999Z

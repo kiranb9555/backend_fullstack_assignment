@@ -7,17 +7,25 @@ import { logger } from "./logger/logger.js";
 
 import "./workers/index.js";
 
+import { scheduleContactCleanup } from "./jobs/scheduleContactCleanup.js";
+
 const server =
   http.createServer(app);
 
 initializeSocket(server);
 
-server.listen(
-  env.port,
-  () => {
-    logger.info({
-      event: "server_started",
-      port: env.port
-    });
-  }
-);
+const start = async () => {
+  await scheduleContactCleanup();
+
+  server.listen(
+    env.port,
+    () => {
+      logger.info({
+        event: "server_started",
+        port: env.port
+      });
+    }
+  );
+};
+
+void start();

@@ -1,6 +1,8 @@
 import { prisma } from "../db/prisma.js";
 import { generateAccessToken } from "../utils/jwt.js";
+
 import { voicemailQueue } from "../queues/voicemail.queue.js";
+import { contactCleanupQueue } from "../queues/contact-cleanup.queue.js";
 
 export const createTestTenant = async () => {
   const tenant =
@@ -82,29 +84,16 @@ export const cleanupDatabase = async () => {
 
 export const cleanupQueues = async () => {
   await voicemailQueue.drain(true);
-  await voicemailQueue.clean(
-    0,
-    1000,
-    "completed"
-  );
-  await voicemailQueue.clean(
-    0,
-    1000,
-    "failed"
-  );
-  await voicemailQueue.clean(
-    0,
-    1000,
-    "wait"
-  );
-  await voicemailQueue.clean(
-    0,
-    1000,
-    "delayed"
-  );
-  await voicemailQueue.clean(
-    0,
-    1000,
-    "active"
-  );
+  await voicemailQueue.clean(0, 1000, "completed");
+  await voicemailQueue.clean(0, 1000, "failed");
+  await voicemailQueue.clean(0, 1000, "wait");
+  await voicemailQueue.clean(0, 1000, "delayed");
+  await voicemailQueue.clean(0, 1000, "active");
+
+  await contactCleanupQueue.drain(true);
+  await contactCleanupQueue.clean(0, 1000, "completed");
+  await contactCleanupQueue.clean(0, 1000, "failed");
+  await contactCleanupQueue.clean(0, 1000, "wait");
+  await contactCleanupQueue.clean(0, 1000, "delayed");
+  await contactCleanupQueue.clean(0, 1000, "active");
 };
