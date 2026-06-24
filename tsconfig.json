@@ -24,7 +24,7 @@
 
   "include": [
     "src/**/*"
-  ],
+, "Untitled"  ],
 
   "exclude": [
     "node_modules",

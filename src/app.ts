@@ -10,7 +10,7 @@ import { notFoundMiddleware } from "./middleware/notFound.middleware.js";
 
 import { errorMiddleware } from "./middleware/error.middleware.js";
 import numbersRoutes from "./modules/numbers/numbers.routes.js";
-
+import simulateRoutes from "./modules/simulate/simulate.routes.js";
 export const app = express();
 
 app.use(helmet());
@@ -23,6 +23,10 @@ app.use(requestLogger);
 app.use(
   "/api/numbers",
   numbersRoutes
+);
+app.use(
+  "/api/simulate",
+  simulateRoutes
 );
 app.get(
   "/health",
