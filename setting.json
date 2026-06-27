@@ -1,0 +1,13 @@
+{
+    "yaml.schemas": {
+        "file:///c%3A/Users/kiran/.cursor/extensions/continue.continue-2.0.0-win32-x64/config-yaml-schema.json": [
+            ".continue/**/*.yaml"
+        ]
+    },
+    "terminal.integrated.commandsToSkipShell": [
+        "kilo-code.new.agentManagerOpen",
+        "kilo-code.new.agentManager.showTerminal"
+    ],
+    "tabnine.experimentalAutoImports": true,
+    "cursor.cpp.enablePartialAccepts": true
+}

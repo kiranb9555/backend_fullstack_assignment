@@ -66,3 +66,5 @@ npm install
 /api/contacts?tag=pricing inquiry
 /api/contacts?minCallCount=2
 /api/contacts?firstSeenFrom=2026-06-01T00:00:00.000Z&firstSeenTo=2026-06-30T23:59:59.999Z
+
+$env:NODE_OPTIONS="--use-system-ca"

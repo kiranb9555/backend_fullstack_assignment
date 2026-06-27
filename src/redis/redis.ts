@@ -1,8 +1,8 @@
-import IORedis from "ioredis";
+import { Redis } from "ioredis";
 import { env } from "../config/env.js";
 
 const createRedis = () => {
-  return new IORedis(env.redisUrl, {
+  return new Redis(env.redisUrl, {
     maxRetriesPerRequest: null,
     enableReadyCheck: false
   });
