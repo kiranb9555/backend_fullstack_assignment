@@ -23,6 +23,24 @@ export class AuthService {
     const rateKey =
       `otp-limit:${mobile}`;
 
+    const currentCount = Number(
+      (await redis.get(rateKey)) ?? 0
+    );
+
+    if (currentCount >= 3) {
+      const ttl =
+        await redis.ttl(rateKey);
+
+      const waitMinutes =
+        ttl > 0
+          ? Math.ceil(ttl / 60)
+          : 10;
+
+      throw new BadRequestError(
+        `Maximum OTP requests exceeded. Try again in ${waitMinutes} minute(s).`
+      );
+    }
+
     const count =
       await redis.incr(rateKey);
 
@@ -31,12 +49,16 @@ export class AuthService {
         rateKey,
         600
       );
-    }
+    } else {
+      const ttl =
+        await redis.ttl(rateKey);
 
-    if (count > 3) {
-      throw new BadRequestError(
-        "Maximum OTP requests exceeded"
-      );
+      if (ttl < 0) {
+        await redis.expire(
+          rateKey,
+          600
+        );
+      }
     }
 
     const otp =

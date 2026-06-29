@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { prisma } from "../../db/prisma.js";
 
 import {
@@ -21,13 +23,17 @@ export class TokenService {
         tenantId
       });
 
+    const tokenId = randomUUID();
+
     const refreshToken =
       generateRefreshToken({
-        tenantId
+        tenantId,
+        tokenId
       });
 
     await prisma.refreshToken.create({
       data: {
+        id: tokenId,
         tenantId,
         token: refreshToken,
         expiresAt: addDays(30)

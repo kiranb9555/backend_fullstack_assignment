@@ -21,6 +21,25 @@ export const errorMiddleware = (
     });
   }
 
+  const err =
+    error instanceof Error
+      ? error
+      : new Error("Unknown server error");
+
+  if (
+    err instanceof SyntaxError &&
+    err.message.includes("JSON")
+  ) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: "INVALID_JSON",
+        message:
+          "Invalid JSON body. For refresh, send: {\"refreshToken\":\"<token-from-verify-otp>\"}"
+      }
+    });
+  }
+
   if (error instanceof AppError) {
     return res.status(error.statusCode).json({
       success: false,
@@ -30,11 +49,6 @@ export const errorMiddleware = (
       }
     });
   }
-
-  const err =
-    error instanceof Error
-      ? error
-      : new Error("Unknown server error");
 
   logger.error({
     event: "unhandled_error",

@@ -15,9 +15,7 @@ const router = Router();
 const controller =
   new SimulateController();
 
-router.use(
-  validateToken
-);
+router.use(validateToken);
 
 router.post(
   "/call",
