@@ -17,12 +17,12 @@ export const app = express();
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
-
+    
 app.use(requestLogger);
 
 
     
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authRoutes);               
 app.use("/api/numbers", numbersRoutes);
 app.use("/api/simulate", simulateRoutes);
 app.use("/api/contacts", contactsRoutes);
