@@ -1,17 +1,19 @@
 import { z } from "zod";
 
+const phoneSchema = z
+  .string()
+  .trim()
+  .regex(
+    /^\+?[1-9]\d{9,14}$/,
+    "Mobile must be in valid phone format"
+  );
+
 export const sendOtpSchema = z.object({
-  mobile: z
-    .string()
-    .min(10)
-    .max(15)
+  mobile: phoneSchema
 });
 
 export const verifyOtpSchema = z.object({
-  mobile: z
-    .string()
-    .min(10)
-    .max(15),
+  mobile: phoneSchema,
 
   otp: z
     .string()

@@ -3,6 +3,7 @@ import { Router } from "express";
 import { NumbersController } from "./numbers.controller.js";
 
 import { validateToken } from "../../middleware/validateToken.middleware.js";
+import { tenantApiRateLimit } from "../../middleware/rateLimit.middleware.js";
 
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
@@ -19,6 +20,7 @@ const controller =
   new NumbersController();
 
 router.use(validateToken);
+router.use(tenantApiRateLimit);
 
 router.get(
   "/",

@@ -12,6 +12,7 @@ import {
 } from "./auth.validation.js";
 
 import { validateRequest } from "../../middleware/validateRequest.middleware.js";
+import { otpRateLimit } from "../../middleware/rateLimit.middleware.js";
 
 const router = Router();
 
@@ -19,6 +20,8 @@ const controller = new AuthController();
 
 router.post(
   "/send-otp",
+
+  otpRateLimit,
 
   validateRequest(
     sendOtpSchema

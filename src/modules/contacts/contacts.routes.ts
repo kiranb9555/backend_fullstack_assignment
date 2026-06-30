@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import { ContactsController } from "./contacts.controller.js";
 import { validateToken } from "../../middleware/validateToken.middleware.js";
+import { tenantApiRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { validateRequest } from "../../middleware/validateRequest.middleware.js";
 
@@ -16,6 +17,7 @@ const controller =
   new ContactsController();
 
 router.use(validateToken);
+router.use(tenantApiRateLimit);
 
 router.get(
   "/",

@@ -55,6 +55,9 @@ export class ContactIntelligenceService {
           id: contact.id
         },
         data: {
+          callCount: {
+            increment: 1
+          },
           name:
             contact.name ??
             extracted.name ??

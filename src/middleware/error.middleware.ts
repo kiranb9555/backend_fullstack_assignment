@@ -14,7 +14,7 @@ export const errorMiddleware = (
     return res.status(400).json({
       success: false,
       error: {
-        code: "VALIDATION_ERROR",
+        code: "ND_4001",
         message: "Validation failed",
         details: error.flatten()
       }
@@ -33,7 +33,7 @@ export const errorMiddleware = (
     return res.status(400).json({
       success: false,
       error: {
-        code: "INVALID_JSON",
+        code: "ND_4002",
         message:
           "Invalid JSON body. For refresh, send: {\"refreshToken\":\"<token-from-verify-otp>\"}"
       }
@@ -59,7 +59,7 @@ export const errorMiddleware = (
   return res.status(500).json({
     success: false,
     error: {
-      code: "INTERNAL_SERVER_ERROR",
+      code: "ND_5001",
       message: "Something went wrong"
     }
   });

@@ -5,7 +5,7 @@ import { JobStatus } from "@prisma/client";
 import { queueConnection } from "../queues/connection.js";
 import { prisma } from "../db/prisma.js";
 import { logger } from "../logger/logger.js";
-import { getIO } from "../socket/socket.js";
+import { emitToTenantRoom } from "../socket/socket.js";
 
 import { TranscriptService } from "../services/transcript.service.js";
 import { AiExtractionService } from "../services/ai-extraction.service.js";
@@ -65,9 +65,10 @@ export const startVoicemailWorker = () => {
         const transcript =
           transcriptService.generateTranscript();
 
-        await prisma.intelligenceJob.update({
+        await prisma.intelligenceJob.updateMany({
           where: {
-            id: intelligenceJobId
+            id: intelligenceJobId,
+            tenantId
           },
           data: {
             status: JobStatus.PROCESSING,
@@ -98,20 +99,21 @@ export const startVoicemailWorker = () => {
                       extracted
                     );
 
-                const result =
-                  await tx.callRecord.update({
-                    where: {
-                      id: callRecordId
-                    },
-                    data: {
-                      contactId: contact.id,
-                      aiSummary: summary
-                    }
-                  });
-
-                await tx.intelligenceJob.update({
+                await tx.callRecord.updateMany({
                   where: {
-                    id: intelligenceJobId
+                    id: callRecordId,
+                    tenantId
+                  },
+                  data: {
+                    contactId: contact.id,
+                    aiSummary: summary
+                  }
+                });
+
+                await tx.intelligenceJob.updateMany({
+                  where: {
+                    id: intelligenceJobId,
+                    tenantId
                   },
                   data: {
                     status: JobStatus.DONE,
@@ -122,19 +124,35 @@ export const startVoicemailWorker = () => {
                   }
                 });
 
+                const result =
+                  await tx.callRecord.findFirst({
+                    where: {
+                      id: callRecordId,
+                      tenantId
+                    },
+                    include: {
+                      contact: true
+                    }
+                  });
+
+                if (!result) {
+                  throw new Error(
+                    "Updated CallRecord not found after enrichment"
+                  );
+                }
+
                 return result;
               }
             );
 
-          getIO()
-            .to(`tenant:${tenantId}`)
-            .emit(
-              "intelligence_ready",
-              {
-                event: "intelligence_ready",
-                data: updatedCallRecord
-              }
-            );
+          await emitToTenantRoom(
+            tenantId,
+            "intelligence_ready",
+            {
+              event: "intelligence_ready",
+              data: updatedCallRecord
+            }
+          );
 
           logger.info({
             event: "voicemail_processed",
@@ -152,9 +170,10 @@ export const startVoicemailWorker = () => {
                   "Unknown voicemail processing error"
                 );
 
-          await prisma.intelligenceJob.update({
+          await prisma.intelligenceJob.updateMany({
             where: {
-              id: intelligenceJobId
+              id: intelligenceJobId,
+              tenantId
             },
             data: {
               status: JobStatus.FAILED,

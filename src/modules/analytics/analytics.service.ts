@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
 
 export class AnalyticsService {
@@ -74,7 +75,7 @@ export class AnalyticsService {
           tenantId,
           status: "DONE",
           extractedData: {
-            not: null
+            not: Prisma.JsonNull
           }
         },
         select: {

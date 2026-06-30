@@ -106,7 +106,7 @@ export class SimulateService {
           intelligenceJobId: intelligenceJob.id
         },
         {
-          attempts: 2,
+          attempts: 3,
           removeOnComplete: false,
           removeOnFail: false
         }

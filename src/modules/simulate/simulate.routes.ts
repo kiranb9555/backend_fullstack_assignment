@@ -3,6 +3,7 @@ import { Router } from "express";
 import { SimulateController } from "./simulate.controller.js";
 
 import { validateToken } from "../../middleware/validateToken.middleware.js";
+import { tenantApiRateLimit } from "../../middleware/rateLimit.middleware.js";
 
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
@@ -16,6 +17,7 @@ const controller =
   new SimulateController();
 
 router.use(validateToken);
+router.use(tenantApiRateLimit);
 
 router.post(
   "/call",
