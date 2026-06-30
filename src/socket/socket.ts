@@ -101,7 +101,8 @@ export const initializeSocket = (
     logger.info({
       event: "socket_connected",
       socketId: socket.id,
-      tenantId
+      tenantId,
+      room: tenantRoom(tenantId)
     });
 
     socket.on(
@@ -133,6 +134,13 @@ export const initializeSocket = (
         void socket.join(
           tenantRoom(requestedTenantId)
         );
+
+        logger.info({
+          event: "socket_joined_room",
+          socketId: socket.id,
+          tenantId: requestedTenantId,
+          room: tenantRoom(requestedTenantId)
+        });
       }
     );
 
@@ -154,4 +162,40 @@ export const getIO = () => {
   }
 
   return io;
+};
+
+export const emitToTenantRoom = async (
+  tenantId: string,
+  eventName: string,
+  payload: unknown
+) => {
+  const room = tenantRoom(tenantId);
+
+  if (!io) {
+    logger.info({
+      event: "socket_emit",
+      socketEvent: eventName,
+      tenantId,
+      room,
+      recipientCount: 0,
+      payload
+    });
+    return 0;
+  }
+
+  const recipients =
+    await io.in(room).fetchSockets();
+
+  io.to(room).emit(eventName, payload);
+
+  logger.info({
+    event: "socket_emit",
+    socketEvent: eventName,
+    tenantId,
+    room,
+    recipientCount: recipients.length,
+    payload
+  });
+
+  return recipients.length;
 };

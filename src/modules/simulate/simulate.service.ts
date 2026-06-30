@@ -5,8 +5,9 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "../../db/prisma.js";
-import { getIO } from "../../socket/socket.js";
+import { emitToTenantRoom } from "../../socket/socket.js";
 import { voicemailQueue } from "../../queues/voicemail.queue.js";
+import { logger } from "../../logger/logger.js";
 
 import { BadRequestError } from "../../common/errors/BadRequestError.js";
 
@@ -112,15 +113,25 @@ export class SimulateService {
       );
     }
 
-    getIO()
-      .to(`tenant:${tenantId}`)
-      .emit(
-        "call_event",
-        {
-          event: "call_event",
-          data: callRecord
-        }
-      );
+    const socketPayload = {
+      event: "call_event",
+      data: callRecord
+    };
+
+    const recipientCount =
+      await emitToTenantRoom(
+      tenantId,
+      "call_event",
+      socketPayload
+    );
+
+    logger.info({
+      event: "simulate_call_emitted",
+      tenantId,
+      callRecordId: callRecord.id,
+      socketEvent: "call_event",
+      recipientCount
+    });
 
     return callRecord;
   }
