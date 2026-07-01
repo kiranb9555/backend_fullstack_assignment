@@ -76,6 +76,14 @@ export const startVoicemailWorker = () => {
           }
         });
 
+        logger.info({
+          event: "voicemail_transcript_generated",
+          tenantId,
+          callRecordId,
+          intelligenceJobId,
+          transcript
+        });
+
         try {
           const extracted =
             await aiExtractionService.extractFromTranscript(

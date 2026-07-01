@@ -1,4 +1,6 @@
-import rateLimit from "express-rate-limit";
+import rateLimit, {
+  ipKeyGenerator
+} from "express-rate-limit";
 import {
   RedisStore,
   type RedisReply
@@ -27,7 +29,7 @@ export const otpRateLimit = rateLimit({
     typeof req.body?.mobile === "string" &&
     req.body.mobile.trim().length > 0
       ? `mobile:${req.body.mobile.trim()}`
-      : `ip:${req.ip ?? "unknown"}`,
+      : ipKeyGenerator(req.ip ?? "unknown"),
   message: {
     success: false,
     error: {
@@ -47,7 +49,7 @@ export const tenantApiRateLimit = rateLimit({
   keyGenerator: req =>
     req.tenant?.id
       ? `tenant:${req.tenant.id}`
-      : `ip:${req.ip ?? "unknown"}`,
+      : ipKeyGenerator(req.ip ?? "unknown"),
   message: {
     success: false,
     error: {
