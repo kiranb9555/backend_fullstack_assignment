@@ -14,7 +14,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "seed:number-pool": "tsx prisma/seed-number-pool.ts"
+    "seed:number-pool": "tsx prisma/seed-number-pool.ts",
+    "check:gemini": "tsx scripts/check-gemini.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.16.1",

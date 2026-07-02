@@ -24,7 +24,7 @@ describe(
     });
 
     it(
-      "should create a call record and contact for a normal call",
+      "should create a call record for a normal call",
       async () => {
 
         const tenant =
@@ -62,19 +62,6 @@ describe(
           response.body.success
         ).toBe(true);
 
-        const contact =
-          await prisma.contact.findFirst({
-            where: {
-              tenantId: tenant.id,
-              phoneNumber:
-                "9876543210"
-            }
-          });
-
-        expect(contact).not.toBeNull();
-        expect(contact?.callCount)
-          .toBe(1);
-
         const callRecord =
           await prisma.callRecord.findFirst({
             where: {
@@ -87,6 +74,8 @@ describe(
         expect(callRecord).not.toBeNull();
         expect(callRecord?.status)
           .toBe("ANSWERED");
+        expect(callRecord?.contactId)
+          .toBeNull();
       }
     );
 

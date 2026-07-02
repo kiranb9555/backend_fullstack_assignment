@@ -21,7 +21,7 @@ const OPENAI_URL =
   "https://api.openai.com/v1/chat/completions";
 
 const getGeminiUrl = (apiKey: string) =>
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
 const extractFirstJsonObject = (
   text: string

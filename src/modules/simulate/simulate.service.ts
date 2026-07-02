@@ -34,49 +34,11 @@ export class SimulateService {
       );
     }
 
-    /**
-     * Ensure contact exists and callCount is incremented
-     * for every simulated call, regardless of voicemail.
-     */
-    let contact =
-      await prisma.contact.findFirst({
-        where: {
-          tenantId,
-          phoneNumber: dto.callerMobile,
-          isDeleted: false
-        }
-      });
-
-    if (!contact) {
-      contact =
-        await prisma.contact.create({
-          data: {
-            tenantId,
-            phoneNumber: dto.callerMobile,
-            tags: [],
-            callCount: 1
-          }
-        });
-    } else {
-      contact =
-        await prisma.contact.update({
-          where: {
-            id: contact.id
-          },
-          data: {
-            callCount: {
-              increment: 1
-            }
-          }
-        });
-    }
-
     const callRecord =
       await prisma.callRecord.create({
         data: {
           tenantId,
           virtualNumberId: dto.virtualNumberId,
-          contactId: contact.id,
           callerMobile: dto.callerMobile,
           direction: dto.direction as CallDirection,
           durationSec: dto.durationSec,
