@@ -160,15 +160,23 @@ export class NumbersService {
       );
     }
 
-    return prisma.virtualNumber.update({
+    await prisma.virtualNumber.updateMany({
       where: {
-        id: numberId
+        id: numberId,
+        tenantId
       },
       data: {
         label:
           dto.label,
         isActive:
           dto.isActive
+      }
+    });
+
+    return prisma.virtualNumber.findFirstOrThrow({
+      where: {
+        id: numberId,
+        tenantId
       }
     });
   }

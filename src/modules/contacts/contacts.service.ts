@@ -159,13 +159,22 @@ export class ContactsService {
       }
     }
 
-    return prisma.contact.update({
+    await prisma.contact.updateMany({
       where: {
-        id: contact.id
+        id: contact.id,
+        tenantId
       },
       data: {
         name: dto.name ?? contact.name,
         tags: Array.from(updatedTags)
+      }
+    });
+
+    return prisma.contact.findFirstOrThrow({
+      where: {
+        id: contact.id,
+        tenantId,
+        isDeleted: false
       }
     });
   }
@@ -189,13 +198,21 @@ export class ContactsService {
       );
     }
 
-    return prisma.contact.update({
+    await prisma.contact.updateMany({
       where: {
-        id: contact.id
+        id: contact.id,
+        tenantId
       },
       data: {
         isDeleted: true,
         deletedAt: new Date()
+      }
+    });
+
+    return prisma.contact.findFirstOrThrow({
+      where: {
+        id: contact.id,
+        tenantId
       }
     });
   }

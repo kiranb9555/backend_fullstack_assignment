@@ -49,22 +49,37 @@ export class ContactIntelligenceService {
       updatedTags.add(extracted.intent);
     }
 
-    contact =
-      await tx.contact.update({
-        where: {
-          id: contact.id
+    await tx.contact.updateMany({
+      where: {
+        id: contact.id,
+        tenantId
+      },
+      data: {
+        callCount: {
+          increment: 1
         },
-        data: {
-          callCount: {
-            increment: 1
-          },
-          name:
-            contact.name ??
-            extracted.name ??
-            undefined,
-          tags: Array.from(updatedTags)
+        name:
+          contact.name ??
+          extracted.name ??
+          undefined,
+        tags: Array.from(updatedTags)
+      }
+    });
+
+    contact =
+      await tx.contact.findFirst({
+        where: {
+          id: contact.id,
+          tenantId,
+          isDeleted: false
         }
       });
+
+    if (!contact) {
+      throw new Error(
+        "Contact not found after intelligence enrichment"
+      );
+    }
 
     return contact;
   }
