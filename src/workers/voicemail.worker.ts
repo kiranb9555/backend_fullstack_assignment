@@ -62,7 +62,19 @@ export const startVoicemailWorker = () => {
           );
         }
 
+        const existingJob =
+          await prisma.intelligenceJob.findFirst({
+            where: {
+              id: intelligenceJobId,
+              tenantId
+            },
+            select: {
+              transcript: true
+            }
+          });
+
         const transcript =
+          existingJob?.transcript ??
           transcriptService.generateTranscript();
 
         await prisma.intelligenceJob.updateMany({
